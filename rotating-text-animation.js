@@ -36,9 +36,9 @@ class RotatingText extends HTMLElement {
     const beforeFont = this.getAttribute('before-font') || 'Verdana';
     const animatedFont = this.getAttribute('animated-font') || 'Verdana';
     const afterFont = this.getAttribute('after-font') || 'Verdana';
-    const beforeSize = this.getAttribute('before-size') || '40'; // In px
-    const animatedSize = this.getAttribute('animated-size') || '40'; // In px
-    const afterSize = this.getAttribute('after-size') || '40'; // In px
+    const beforeSize = this.getAttribute('before-size') || '4'; // In vw (default 4vw ~ 40px on 1000px viewport)
+    const animatedSize = this.getAttribute('animated-size') || '4'; // In vw
+    const afterSize = this.getAttribute('after-size') || '4'; // In vw
 
     // Split animated text into an array
     const animatedWords = animatedText.split(',').map(word => word.trim());
@@ -47,9 +47,9 @@ class RotatingText extends HTMLElement {
     // Generate spans for animated words
     const animatedSpans = animatedWords.map(word => `<span>${word}</span>`).join('');
 
-    // Use the largest font size for the container height
-    const maxFontSize = Math.max(parseInt(beforeSize), parseInt(animatedSize), parseInt(afterSize));
-    const animatedHeight = maxFontSize;
+    // Use the largest font size (in vw) for the container height
+    const maxFontSize = Math.max(parseFloat(beforeSize), parseFloat(animatedSize), parseFloat(afterSize));
+    const animatedHeight = `${maxFontSize}vw`;
 
     // Determine visibility based on text content
     const beforeVisible = beforeText.trim() ? 'inline' : 'none';
@@ -66,46 +66,53 @@ class RotatingText extends HTMLElement {
           justify-content: center;
           align-items: center;
           background-color: ${backgroundColor};
+          overflow: hidden; /* Prevent overflow outside widget */
         }
 
         .rotating-text {
           text-transform: uppercase;
           display: flex;
+          flex-wrap: wrap; /* Allow wrapping */
           align-items: baseline;
           gap: 0.5em;
-          flex-wrap: wrap;
+          max-width: 90%; /* Limit width to wrap text within bounds */
+          text-align: center; /* Center all text horizontally */
         }
 
         .before-text {
-          display: ${beforeVisible}; /* Hide if empty */
+          display: ${beforeVisible};
           color: ${beforeColor};
           font-family: ${beforeFont}, sans-serif;
-          font-size: ${beforeSize}px;
+          font-size: ${beforeSize}vw;
           line-height: 1;
+          order: 1; /* Ensure before text comes first */
         }
 
         .animated-container {
           display: inline-block;
-          height: ${animatedHeight}px;
+          height: ${animatedHeight};
           overflow: hidden;
           color: ${animatedColor};
           font-family: ${animatedFont}, sans-serif;
-          font-size: ${animatedSize}px;
+          font-size: ${animatedSize}vw;
           line-height: 1;
+          order: 2; /* Animated text in the middle */
         }
 
         .animated-container span {
           display: block;
           animation: moveUp ${animationDuration} infinite;
-          line-height: ${animatedHeight}px;
+          line-height: ${animatedHeight};
         }
 
         .after-text {
-          display: ${afterVisible}; /* Hide if empty */
+          display: ${afterVisible};
           color: ${afterColor};
           font-family: ${afterFont}, sans-serif;
-          font-size: ${afterSize}px;
+          font-size: ${afterSize}vw;
           line-height: 1;
+          order: 3; /* After text last, wraps under if needed */
+          flex: 1 0 auto; /* Allow it to grow and wrap */
         }
 
         @keyframes moveUp {
