@@ -8,8 +8,7 @@ class RotatingTextAnimation extends HTMLElement {
     return [
       'before-text', 'animated-text', 'after-text',
       'background-color', 'before-color', 'animated-color', 'after-color',
-      'before-font', 'animated-font', 'after-font',
-      'animation-duration', 'animation-direction'
+      'before-font', 'animated-font', 'after-font'
     ];
   }
 
@@ -35,32 +34,21 @@ class RotatingTextAnimation extends HTMLElement {
     const beforeFont = this.getAttribute('before-font') || 'Verdana';
     const animatedFont = this.getAttribute('animated-font') || 'Verdana';
     const afterFont = this.getAttribute('after-font') || 'Verdana';
-    let animationDuration = this.getAttribute('animation-duration') || '8';
-    const animationDirection = this.getAttribute('animation-direction') || 'upward';
-
-    // Ensure animation duration includes 's' unit
-    animationDuration = isNaN(animationDuration) ? animationDuration : `${animationDuration}s`;
 
     // Split animated text, trim whitespace, and filter out empty entries
     const animatedWords = animatedText
       .split(',')
       .map(word => word.trim())
-      .filter(word => word.length > 0); // Remove empty strings
+      .filter(word => word.length > 0);
 
-    // If no valid words, use a fallback
+    // Fallback if no valid words
     if (animatedWords.length === 0) {
       animatedWords.push('default');
     }
 
-    // Calculate animation parameters
-    const lineHeight = 40; // Fixed line height in px
+    // Fixed animation settings from original code
+    const lineHeight = 40; // Matches original CSS
     const totalHeight = lineHeight * animatedWords.length;
-    const stepPercentage = animatedWords.length > 1 ? 100 / (animatedWords.length - 1) : 100;
-
-    // Determine animation direction
-    const isUpward = animationDirection === 'upward';
-    const translateStart = isUpward ? '0' : `-${totalHeight - lineHeight}px`;
-    const translateEnd = isUpward ? `-${totalHeight - lineHeight}px` : '0';
 
     // Inject HTML and CSS into shadow DOM
     this.shadowRoot.innerHTML = `
@@ -79,7 +67,7 @@ class RotatingTextAnimation extends HTMLElement {
           text-transform: uppercase;
           font-size: 40px;
           display: flex;
-          align-items: center;
+          align-items: baseline; /* Align all text on baseline */
           gap: 8px;
         }
 
@@ -94,11 +82,12 @@ class RotatingTextAnimation extends HTMLElement {
           overflow: hidden;
           color: ${animatedColor};
           font-family: ${animatedFont}, sans-serif;
+          line-height: ${lineHeight}px; /* Match container height */
         }
 
         .animated-container span {
           display: block;
-          animation: move ${animationDuration} infinite;
+          animation: moveUp 8s infinite; /* Fixed duration from original */
         }
 
         .after-text {
@@ -106,22 +95,18 @@ class RotatingTextAnimation extends HTMLElement {
           font-family: ${afterFont}, sans-serif;
         }
 
-        @keyframes move {
-          0% {
-            transform: translateY(${translateStart});
-          }
-          ${animatedWords.length > 1 ? animatedWords.map((_, i) => {
-            if (i === 0) return ''; // Skip 0%
-            const percentage = i * stepPercentage;
-            return `
-              ${percentage}% {
-                transform: translateY(${isUpward ? `-${i * lineHeight}px` : `${(animatedWords.length - 1 - i) * lineHeight}px`});
-              }
-            `;
-          }).join('') : '' /* No keyframes if only one word */}
-          100% {
-            transform: translateY(${translateEnd});
-          }
+        @keyframes moveUp {
+          0% { transform: translateY(0); }
+          20% { transform: translateY(0); } /* Pause on first word */
+          25% { transform: translateY(-${lineHeight}px); }
+          45% { transform: translateY(-${lineHeight}px); } /* Pause on second */
+          50% { transform: translateY(-${2 * lineHeight}px); }
+          70% { transform: translateY(-${2 * lineHeight}px); } /* Pause on third */
+          ${animatedWords.length > 3 ? `
+            75% { transform: translateY(-${3 * lineHeight}px); }
+            95% { transform: translateY(-${3 * lineHeight}px); } /* Pause on fourth if exists */
+          ` : ''}
+          100% { transform: translateY(-${totalHeight - lineHeight}px); }
         }
       </style>
       <div class="rotating-text">
