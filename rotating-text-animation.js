@@ -24,6 +24,7 @@ class RotatingTextAnimation extends HTMLElement {
   }
 
   render() {
+    // Get attribute values with fallbacks
     const beforeText = this.getAttribute('before-text') || 'before';
     const animatedText = this.getAttribute('animated-text') || 'word1, word2, word3';
     const afterText = this.getAttribute('after-text') || 'after';
@@ -37,17 +38,31 @@ class RotatingTextAnimation extends HTMLElement {
     let animationDuration = this.getAttribute('animation-duration') || '8';
     const animationDirection = this.getAttribute('animation-direction') || 'upward';
 
+    // Ensure animation duration includes 's' unit
     animationDuration = isNaN(animationDuration) ? animationDuration : `${animationDuration}s`;
 
-    const animatedWords = animatedText.split(',').map(word => word.trim());
-    const lineHeight = 40;
-    const totalHeight = lineHeight * animatedWords.length;
-    const stepPercentage = 100 / (animatedWords.length - 1);
+    // Split animated text, trim whitespace, and filter out empty entries
+    const animatedWords = animatedText
+      .split(',')
+      .map(word => word.trim())
+      .filter(word => word.length > 0); // Remove empty strings
 
+    // If no valid words, use a fallback
+    if (animatedWords.length === 0) {
+      animatedWords.push('default');
+    }
+
+    // Calculate animation parameters
+    const lineHeight = 40; // Fixed line height in px
+    const totalHeight = lineHeight * animatedWords.length;
+    const stepPercentage = animatedWords.length > 1 ? 100 / (animatedWords.length - 1) : 100;
+
+    // Determine animation direction
     const isUpward = animationDirection === 'upward';
     const translateStart = isUpward ? '0' : `-${totalHeight - lineHeight}px`;
     const translateEnd = isUpward ? `-${totalHeight - lineHeight}px` : '0';
 
+    // Inject HTML and CSS into shadow DOM
     this.shadowRoot.innerHTML = `
       <style>
         :host {
@@ -95,15 +110,15 @@ class RotatingTextAnimation extends HTMLElement {
           0% {
             transform: translateY(${translateStart});
           }
-          ${animatedWords.map((_, i) => {
-            if (i === 0) return '';
+          ${animatedWords.length > 1 ? animatedWords.map((_, i) => {
+            if (i === 0) return ''; // Skip 0%
             const percentage = i * stepPercentage;
             return `
               ${percentage}% {
                 transform: translateY(${isUpward ? `-${i * lineHeight}px` : `${(animatedWords.length - 1 - i) * lineHeight}px`});
               }
             `;
-          }).join('')}
+          }).join('') : '' /* No keyframes if only one word */}
           100% {
             transform: translateY(${translateEnd});
           }
