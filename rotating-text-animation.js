@@ -1,4 +1,4 @@
-class RotatingTextAnimation extends HTMLElement {
+class RotatingText extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
@@ -7,9 +7,10 @@ class RotatingTextAnimation extends HTMLElement {
   static get observedAttributes() {
     return [
       'before-text', 'animated-text', 'after-text',
-      'background-color', 'before-color', 'animated-color', 'after-color',
+      'background-color',
+      'before-color', 'animated-color', 'after-color',
       'before-font', 'animated-font', 'after-font',
-      'animation-duration', 'animation-direction'
+      'before-size', 'animated-size', 'after-size'
     ];
   }
 
@@ -24,9 +25,10 @@ class RotatingTextAnimation extends HTMLElement {
   }
 
   render() {
-    const beforeText = this.getAttribute('before-text') || 'before';
+    // Get attribute values with fallbacks
+    const beforeText = this.getAttribute('before-text') || 'Before';
     const animatedText = this.getAttribute('animated-text') || 'word1, word2, word3';
-    const afterText = this.getAttribute('after-text') || 'after';
+    const afterText = this.getAttribute('after-text') || 'After';
     const backgroundColor = this.getAttribute('background-color') || '#131313';
     const beforeColor = this.getAttribute('before-color') || '#FFFFFF';
     const animatedColor = this.getAttribute('animated-color') || '#FF7A00';
@@ -34,90 +36,88 @@ class RotatingTextAnimation extends HTMLElement {
     const beforeFont = this.getAttribute('before-font') || 'Verdana';
     const animatedFont = this.getAttribute('animated-font') || 'Verdana';
     const afterFont = this.getAttribute('after-font') || 'Verdana';
-    let animationDuration = this.getAttribute('animation-duration') || '8';
-    const animationDirection = this.getAttribute('animation-direction') || 'upward';
+    const beforeSize = this.getAttribute('before-size') || '40'; // In px
+    const animatedSize = this.getAttribute('animated-size') || '40'; // In px
+    const afterSize = this.getAttribute('after-size') || '40'; // In px
 
-    animationDuration = isNaN(animationDuration) ? animationDuration : `${animationDuration}s`;
-
+    // Split animated text into an array and create spans
     const animatedWords = animatedText.split(',').map(word => word.trim());
-    const lineHeight = 40;
-    const totalHeight = lineHeight * animatedWords.length;
-    const stepPercentage = 100 / (animatedWords.length - 1);
+    const animatedHeight = animatedSize; // Height matches font size for animation
+    const animationDuration = `${animatedWords.length * 2}s`; // 2s per word
 
-    const isUpward = animationDirection === 'upward';
-    const translateStart = isUpward ? '0' : `-${totalHeight - lineHeight}px`;
-    const translateEnd = isUpward ? `-${totalHeight - lineHeight}px` : '0';
+    // Generate spans for animated words
+    const animatedSpans = animatedWords.map(word => `<span>${word}</span>`).join('');
 
+    // Inject HTML and CSS into shadow DOM
     this.shadowRoot.innerHTML = `
       <style>
         :host {
           width: 100vw;
           height: 100vh;
           margin: 0;
-          display: grid;
-          place-items: center;
-          background: ${backgroundColor};
-          overflow: hidden;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background-color: ${backgroundColor};
         }
 
         .rotating-text {
           text-transform: uppercase;
-          font-size: 40px;
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 0.5em;
         }
 
         .before-text {
           color: ${beforeColor};
           font-family: ${beforeFont}, sans-serif;
+          font-size: ${beforeSize}px;
         }
 
         .animated-container {
           display: inline-block;
-          height: ${lineHeight}px;
+          height: ${animatedHeight}px;
           overflow: hidden;
           color: ${animatedColor};
           font-family: ${animatedFont}, sans-serif;
+          font-size: ${animatedSize}px;
         }
 
         .animated-container span {
           display: block;
-          animation: move ${animationDuration} infinite;
+          animation: moveUp ${animationDuration} infinite;
         }
 
         .after-text {
           color: ${afterColor};
           font-family: ${afterFont}, sans-serif;
+          font-size: ${afterSize}px;
         }
 
-        @keyframes move {
+        @keyframes moveUp {
           0% {
-            transform: translateY(${translateStart});
+            transform: translateY(0);
           }
-          ${animatedWords.map((_, i) => {
-            if (i === 0) return '';
-            const percentage = i * stepPercentage;
-            return `
-              ${percentage}% {
-                transform: translateY(${isUpward ? `-${i * lineHeight}px` : `${(animatedWords.length - 1 - i) * lineHeight}px`});
-              }
-            `;
-          }).join('')}
+          ${animatedWords.map((_, i) => `
+            ${(i + 1) * (100 / animatedWords.length)}% {
+              transform: translateY(-${(i + 1) * 100}%);
+            }
+          `).join('')}
           100% {
-            transform: translateY(${translateEnd});
+            transform: translateY(0);
           }
         }
       </style>
       <div class="rotating-text">
         <span class="before-text">${beforeText}</span>
         <div class="animated-container">
-          <span>${animatedWords.join('<br/>')}</span>
+          ${animatedSpans}
         </div>
-        ${afterText ? `<span class="after-text">${afterText}</span>` : ''}
+        <span class="after-text">${afterText}</span>
       </div>
     `;
   }
 }
 
-customElements.define('rotating-text-animation', RotatingTextAnimation);
+// Define the custom element
+customElements.define('rotating-text', RotatingText);
