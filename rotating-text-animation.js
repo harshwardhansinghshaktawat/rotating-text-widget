@@ -40,13 +40,16 @@ class RotatingText extends HTMLElement {
     const animatedSize = this.getAttribute('animated-size') || '40'; // In px
     const afterSize = this.getAttribute('after-size') || '40'; // In px
 
-    // Split animated text into an array and create spans
+    // Split animated text into an array
     const animatedWords = animatedText.split(',').map(word => word.trim());
-    const animatedHeight = animatedSize; // Height matches font size for animation
     const animationDuration = `${animatedWords.length * 2}s`; // 2s per word
 
     // Generate spans for animated words
     const animatedSpans = animatedWords.map(word => `<span>${word}</span>`).join('');
+
+    // Use the largest font size for the container height to ensure alignment
+    const maxFontSize = Math.max(parseInt(beforeSize), parseInt(animatedSize), parseInt(afterSize));
+    const animatedHeight = maxFontSize; // Set height to tallest text for smooth animation
 
     // Inject HTML and CSS into shadow DOM
     this.shadowRoot.innerHTML = `
@@ -64,34 +67,39 @@ class RotatingText extends HTMLElement {
         .rotating-text {
           text-transform: uppercase;
           display: flex;
-          align-items: center;
+          align-items: baseline; /* Align all text on the same baseline */
           gap: 0.5em;
+          flex-wrap: wrap; /* Allow wrapping if needed */
         }
 
         .before-text {
           color: ${beforeColor};
           font-family: ${beforeFont}, sans-serif;
           font-size: ${beforeSize}px;
+          line-height: 1; /* Normalize line height for consistent baseline */
         }
 
         .animated-container {
           display: inline-block;
-          height: ${animatedHeight}px;
+          height: ${animatedHeight}px; /* Match tallest text for animation */
           overflow: hidden;
           color: ${animatedColor};
           font-family: ${animatedFont}, sans-serif;
           font-size: ${animatedSize}px;
+          line-height: 1; /* Normalize line height */
         }
 
         .animated-container span {
           display: block;
           animation: moveUp ${animationDuration} infinite;
+          line-height: ${animatedHeight}px; /* Match container height */
         }
 
         .after-text {
           color: ${afterColor};
           font-family: ${afterFont}, sans-serif;
           font-size: ${afterSize}px;
+          line-height: 1; /* Normalize line height */
         }
 
         @keyframes moveUp {
