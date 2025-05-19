@@ -2,6 +2,8 @@ class RotatingText extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
+    this.isVisible = false;
+    this.observer = null;
   }
 
   static get observedAttributes() {
@@ -22,6 +24,54 @@ class RotatingText extends HTMLElement {
 
   connectedCallback() {
     this.render();
+    
+    // Create and configure the Intersection Observer
+    this.setupIntersectionObserver();
+  }
+
+  disconnectedCallback() {
+    // Clean up observer when element is removed from DOM
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    }
+  }
+  
+  setupIntersectionObserver() {
+    // Create options for the observer
+    const options = {
+      root: null, // Use viewport as root
+      rootMargin: '0px', // No margin
+      threshold: 0.2 // Trigger when at least 20% of the element is visible
+    };
+    
+    // Create the observer instance
+    this.observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          // Element has entered the viewport
+          this.isVisible = true;
+          this.updateAnimationState();
+        } else {
+          // Element has left the viewport
+          this.isVisible = false;
+          this.updateAnimationState();
+        }
+      });
+    }, options);
+    
+    // Start observing the element
+    this.observer.observe(this);
+  }
+  
+  updateAnimationState() {
+    const container = this.shadowRoot.querySelector('.animated-container');
+    if (!container) return;
+    
+    const animatedSpans = container.querySelectorAll('span');
+    animatedSpans.forEach(span => {
+      span.style.animationPlayState = this.isVisible ? 'running' : 'paused';
+    });
   }
 
   render() {
@@ -54,6 +104,9 @@ class RotatingText extends HTMLElement {
     // Determine visibility based on text content
     const beforeVisible = beforeText.trim() ? 'inline' : 'none';
     const afterVisible = afterText.trim() ? 'inline' : 'none';
+
+    // Set initial animation state (paused)
+    const initialAnimationState = this.isVisible ? 'running' : 'paused';
 
     // Inject HTML and CSS into shadow DOM
     this.shadowRoot.innerHTML = `
@@ -102,6 +155,7 @@ class RotatingText extends HTMLElement {
         .animated-container span {
           display: block;
           animation: moveUp ${animationDuration} infinite;
+          animation-play-state: ${initialAnimationState}; /* Start paused, will be triggered by observer */
           line-height: ${animatedHeight};
         }
 
@@ -137,6 +191,9 @@ class RotatingText extends HTMLElement {
         <span class="after-text">${afterText}</span>
       </div>
     `;
+    
+    // Update animation state after rendering
+    this.updateAnimationState();
   }
 }
 
